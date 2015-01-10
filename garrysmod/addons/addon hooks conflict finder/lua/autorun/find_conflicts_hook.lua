@@ -20,6 +20,7 @@ if CLIENT then
 		MsgC(ServerColor, net.ReadString())
 	end)
 end
+local find_conflicts_hook
 local function ReportHookResult (EventName, HookName, HookFunction, ...)
 	local Returned = {...}
 	if #Returned == 0 or (#Returned == 1 and Returned[1] == nil) then -- unverified condition
@@ -62,7 +63,7 @@ local function ReportHookResult (EventName, HookName, HookFunction, ...)
 				net.WriteString(resultstr)
 			net.Send(superadmins)
 		else
-			RunConsoleCommand("find_conflicts_hook_sv", EventName, "0") -- Stop sending to superadmins if none connected.
+			find_conflicts_hook(nil, concommand_name, {EventName, 0}, concommand_name..' "'..EventName..'" "0"') -- Stop sending to superadmins if none connected.
 		end
 	end
 	return ...
@@ -78,7 +79,7 @@ end
 
 local helpstr = concommand_name.." <EventName> <0|1>\n   Displays the hook result of the specified event name in order to find a hook conflict.\n"
 local CancelTests = {}
-concommand.Add(concommand_name, function (ply, cmd, args, fullstring)
+function find_conflicts_hook (ply, cmd, args, fullstring)
 	if CLIENT or !IsValid(ply) or ply:IsSuperAdmin() then
 		local EventName = args[1]
 		if !isstring(EventName) then
@@ -146,4 +147,5 @@ concommand.Add(concommand_name, function (ply, cmd, args, fullstring)
 			end
 		end
 	end
-end, nil, helpstr, 0)
+end
+concommand.Add(concommand_name, find_conflicts_hook, nil, helpstr, 0)
