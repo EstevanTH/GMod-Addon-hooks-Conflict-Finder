@@ -20,11 +20,12 @@ if CLIENT then
 		MsgC(ServerColor, net.ReadString())
 	end)
 end
-local function ReportHookResult (EventName, HookName, ...)
+local function ReportHookResult (EventName, HookName, HookFunction, ...)
 	local Returned = {...}
 	if #Returned == 0 or (#Returned == 1 and Returned[1] == nil) then -- unverified condition
 		return ...
 	end
+	-- Process HookName:
 	if HookName != nil then
 		if isstring(HookName) then
 			HookName = 'hook "'..HookName..'"'
@@ -34,6 +35,9 @@ local function ReportHookResult (EventName, HookName, ...)
 	else
 		HookName = "GAMEMODE"
 	end
+	-- Process info:
+	local info = debug.getinfo(HookFunction, 'S')
+	-- Process list_rarg:
 	local list_rarg = ""
 	for k,rarg in ipairs(Returned) do
 		if isstring(rarg) then
@@ -42,7 +46,8 @@ local function ReportHookResult (EventName, HookName, ...)
 			list_rarg = list_rarg.."\n\tArg #"..tostring(k)..' = '..tostring(rarg)
 		end
 	end
-	local resultstr = 'Event "'..EventName..'", '..HookName..', returned:'..list_rarg..'\n'
+	-- Finish operation:
+	local resultstr = 'Event "'..EventName..'", '..HookName..',\n in "'..tostring(info.short_src)..'" (lines '..tostring(info.linedefined)..' to '..tostring(info.lastlinedefined)..'), returned:'..list_rarg..'\n\n'
 	if CLIENT or !SendToSuperAdmins then
 		MsgC(ResultColor, resultstr)
 	else
@@ -98,7 +103,7 @@ concommand.Add(concommand_name, function (ply, cmd, args, fullstring)
 					for HookName,HookFunction in pairs(EventFunctions) do
 						if isfunction(HookFunction) then
 							local function new_HookFunction (...)
-								return ReportHookResult(EventName, HookName, HookFunction(...))
+								return ReportHookResult(EventName, HookName, HookFunction, HookFunction(...))
 							end
 							CancelTest[HookName] = HookFunction
 							-- hook.Remove(EventName, HookName)
@@ -113,7 +118,7 @@ concommand.Add(concommand_name, function (ply, cmd, args, fullstring)
 				if isfunction(GAMEMODE[EventName]) then
 					local HookFunction = GAMEMODE[EventName]
 					local function new_HookFunction (...)
-						return ReportHookResult(EventName, nil, HookFunction(...))
+						return ReportHookResult(EventName, nil, HookFunction, HookFunction(...))
 					end
 					CancelTest[GAMEMODE] = HookFunction -- to be restored first
 					GAMEMODE[EventName] = new_HookFunction
