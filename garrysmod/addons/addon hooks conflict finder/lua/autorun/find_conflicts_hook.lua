@@ -38,6 +38,7 @@ local function ReportHookResult (EventName, HookName, HookFunction, ...)
 	end
 	-- Process info:
 	local info = debug.getinfo(HookFunction, 'S')
+	-- MsgN(table.ToString(info, "info", true)) -- debug
 	-- Process list_rarg:
 	local list_rarg = ""
 	for k,rarg in ipairs(Returned) do
@@ -113,7 +114,7 @@ function find_conflicts_hook (ply, cmd, args, fullstring)
 					end
 					NiceMsgN(ply, 'Conflict test started for event name "'..EventName..'"!')
 				else
-					ErrorNoHalt('Could find no hook with event name "'..EventName..'"!')
+					NiceMsgN('Could find no hook with event name "'..EventName..'"!')
 					return
 				end
 				if isfunction(GAMEMODE[EventName]) then
