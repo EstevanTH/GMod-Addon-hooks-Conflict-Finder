@@ -13,10 +13,9 @@ local SendToSuperAdmins -- parameter set below
 ---------- BUILD LUA LIST FOR EACH WORKSHOP ADDON ----------
 local ComprAddonsList, ComprAddonsListLen -- cache for Lua files in Workshop addons, sent to client
 local net_ReceiveLuaFiles
-local AddonsList -- Workshop addons list, only set when the 1st test starts
-local FillAddonsList
+-- addon_hooks_conflict_finder.AddonsList: Workshop addons list, only set when the 1st test starts
 if SERVER then
-	function FillAddonsList()
+	function addon_hooks_conflict_finder.FillAddonsList()
 		local TempAddonsList = {}
 		local title
 		for _,addon_info in pairs( engine.GetAddons() ) do
@@ -33,7 +32,7 @@ if SERVER then
 				end
 			end
 		end
-		AddonsList = {}
+		addon_hooks_conflict_finder.AddonsList = {}
 		for _,title in ipairs( TempAddonsList ) do
 			local dirs = {"lua", "gamemodes"}
 			local finished = false
@@ -58,14 +57,14 @@ if SERVER then
 					LuaList[dir.."/"..f] = true -- BEWARE OF CASE-SENSITIVE file systems
 				end
 			end
-			AddonsList[title] = LuaList
+			addon_hooks_conflict_finder.AddonsList[title] = LuaList
 		end
-		ComprAddonsList = util.Compress( util.TableToJSON( AddonsList ) )
+		ComprAddonsList = util.Compress( util.TableToJSON( addon_hooks_conflict_finder.AddonsList ) )
 		ComprAddonsListLen = string.len( ComprAddonsList )
 	end
 	net.Receive( "find_conflicts_hook", function( len, ply )
-		if !AddonsList then
-			FillAddonsList()
+		if !addon_hooks_conflict_finder.AddonsList then
+			addon_hooks_conflict_finder.FillAddonsList()
 		end
 		net.Start( "find_conflicts_hook" )
 			net.WriteUInt( 1, 8 )
@@ -74,19 +73,19 @@ if SERVER then
 		net.Send( ply )
 	end )
 else
-	function FillAddonsList()
+	function addon_hooks_conflict_finder.FillAddonsList()
 		net.Start( "find_conflicts_hook" )
 		net.SendToServer()
 	end
 	function net_ReceiveLuaFiles()
-		AddonsList = util.JSONToTable( util.Decompress( net.ReadData( net.ReadUInt( 32 ) ) ) )
+		addon_hooks_conflict_finder.AddonsList = util.JSONToTable( util.Decompress( net.ReadData( net.ReadUInt( 32 ) ) ) )
 		KnownLuaFiles = {}
 	end
 end
 
 ---------- FIND LUA FILE LOCATION ----------
 local KnownLuaFiles = {} -- cache for Lua file readable locations (table of paths or path+addon name)
-local function LocateLuaFile( LuaFile )
+function addon_hooks_conflict_finder.LocateLuaFile( LuaFile )
 	-- WorkshopAddons must be nil when LuaFile is not contained in any Workshop addon, otherwise it must be a table of addon names.
 	if !KnownLuaFiles[LuaFile] then
 		local CleanLuaFile = LuaFile
@@ -95,18 +94,8 @@ local function LocateLuaFile( LuaFile )
 		end
 		local WorkshopAddons
 		local f
-		-- if SERVER then
-			-- for _,title in ipairs( AddonsList ) do
-				-- -- Unfortunately file.Exists() does not work with Workshop addon titles as a directory.
-				-- f = file.Find( CleanLuaFile, title ) -- BEWARE OF CASE-SENSITIVE file systems
-				-- if f and #f>=1 then
-					-- WorkshopAddons = WorkshopAddons or {}
-					-- table.insert( WorkshopAddons, title )
-				-- end
-			-- end
-		-- else
-		if AddonsList then -- nil while client has not loaded
-			for title,LuaList in pairs( AddonsList ) do
+		if addon_hooks_conflict_finder.AddonsList then -- nil while client has not loaded
+			for title,LuaList in pairs( addon_hooks_conflict_finder.AddonsList ) do
 				if LuaList[CleanLuaFile] then -- BEWARE OF CASE-SENSITIVE file systems
 					WorkshopAddons = WorkshopAddons or {}
 					table.insert( WorkshopAddons, title )
@@ -191,7 +180,7 @@ function addon_hooks_conflict_finder.ReportHookResult( EventName, HookName, Hook
 	local LuaFile = tostring( info.short_src )
 	local foundstr
 	do
-		local locations = LocateLuaFile( LuaFile )
+		local locations = addon_hooks_conflict_finder.LocateLuaFile( LuaFile )
 		if !locations then
 			foundstr = "not found in Workshop addons"
 		elseif #locations == 1 then
@@ -262,8 +251,8 @@ function find_conflicts_hook( ply, cmd, args, fullstring )
 			NiceMsgN( ply, " - "..helpstr )
 			return
 		end
-		if !AddonsList then
-			FillAddonsList()
+		if !addon_hooks_conflict_finder.AddonsList then
+			addon_hooks_conflict_finder.FillAddonsList()
 		end
 		local start_op = tobool( tonumber( args[2] or 1 ) )
 		local IsRunning = istable( CancelTests[EventName] )
@@ -280,11 +269,11 @@ function find_conflicts_hook( ply, cmd, args, fullstring )
 				if istable( EventFunctions ) and table.Count( EventFunctions ) > 0 then
 					if !addon_hooks_conflict_finder.hook_Add then
 						addon_hooks_conflict_finder.hook_Add = hook.Add
-						hook.Add = function( EventName, HookName, func, ... )
+						hook.Add = function( EventName, HookName, HookFunction, ... )
 							if addon_hooks_conflict_finder.CancelTests[EventName] then
 								addon_hooks_conflict_finder.AddModifiedHook( EventName, HookName, HookFunction )
 							else
-								addon_hooks_conflict_finder.hook_Add( EventName, HookName, func, ... )
+								addon_hooks_conflict_finder.hook_Add( EventName, HookName, HookFunction, ... )
 							end
 						end
 					end
