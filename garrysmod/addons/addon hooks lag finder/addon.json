@@ -1,0 +1,13 @@
+{
+	"title"		:	"Addon hooks Lag Finder",
+	"type"		:	"tool",
+	"tags"		:	[],
+	"ignore"	:
+	[
+		"Dev/*",
+		"*.disabled",
+		"*.cmd",
+		"addon hooks lag finder.jpg",
+		"addon hooks lag finder.png"
+	]
+}
