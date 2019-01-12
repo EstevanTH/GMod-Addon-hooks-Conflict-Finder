@@ -118,6 +118,15 @@ else
 	ResultColor = Color( 255, 192, 0 )
 end
 
+---------- SEND MESSAGE ----------
+local function NiceMsgN( ply, ... )
+	if SERVER and IsValid( ply ) then
+		ply:PrintMessage( HUD_PRINTCONSOLE, string.Implode( "", { ... } ) )
+	else
+		MsgN( ... )
+	end
+end
+
 ---------- FORMAT HOOK RESULTS ----------
 local FormatReturned
 do
@@ -176,7 +185,6 @@ function addon_hooks_conflict_finder.ReportHookResult( EventName, HookName, Hook
 			list_rarg = list_rarg.."\n\tArg #"..tostring( k )..' = '..tostring( rarg )
 		end
 	end
-	-- Finish operation:
 	local LuaFile = tostring( info.short_src )
 	local foundstr
 	do
@@ -189,6 +197,7 @@ function addon_hooks_conflict_finder.ReportHookResult( EventName, HookName, Hook
 			foundstr = "found in Workshop addons « "..string.Implode( " », « ", locations ).." »"
 		end
 	end
+	-- Finish operation:
 	if CLIENT or !SendToSuperAdmins then
 		MsgC( ResultColor, FormatReturned( EventName, HookName, LuaFile, info.linedefined, info.lastlinedefined, foundstr, list_rarg ) )
 	else
@@ -214,15 +223,6 @@ function addon_hooks_conflict_finder.ReportHookResult( EventName, HookName, Hook
 		end
 	end
 	return ...
-end
-
----------- SEND MESSAGE ----------
-local function NiceMsgN( ply, ... )
-	if SERVER and IsValid( ply ) then
-		ply:PrintMessage( HUD_PRINTCONSOLE, string.Implode( "", { ... } ) )
-	else
-		MsgN( ... )
-	end
 end
 
 ---------- START TESTS ----------
@@ -256,7 +256,7 @@ function find_conflicts_hook( ply, cmd, args, fullstring )
 		end
 		local start_op = tobool( tonumber( args[2] or 1 ) )
 		local IsRunning = istable( CancelTests[EventName] )
-		local HookTable = hook.GetTable() -- This is a copy!
+		local HookTable = hook.GetTable() -- This may be a copy!
 		local EventFunctions = HookTable[EventName]
 		local CancelTest
 		if start_op then -- begin operation
