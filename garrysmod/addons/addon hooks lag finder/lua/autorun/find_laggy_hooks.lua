@@ -1,3 +1,7 @@
+--- Ajouter le temps de rendu VGUI.
+
+
+
 -- Note: GM functions that have been modified during a test will be restored with an older version.
 
 addon_hooks_lag_finder = addon_hooks_lag_finder or {}
@@ -472,7 +476,7 @@ function find_laggy_hooks( ply, cmd, args, fullstring )
 		local IsRunning = addon_hooks_lag_finder.RunningTest
 		local HookTable = hook.GetTable() -- This may be a copy!
 		local NetTable = net.Receivers
-		local UsermessageTable = usermessage.GetTable()
+		local UsermessageTable = usermessage and usermessage.GetTable() or {}
 		local ENTTable = scripted_ents.GetList()
 		local SWEPTable = weapons.GetList()
 		if ReportInterval>0 then -- begin operation
@@ -506,12 +510,14 @@ function find_laggy_hooks( ply, cmd, args, fullstring )
 				end
 				-- Modify usermessage.Hook():
 				if !addon_hooks_lag_finder.usermessage_Hook then
-					addon_hooks_lag_finder.usermessage_Hook = usermessage.Hook
-					usermessage.Hook = function( EventName, HookFunction, ... )
-						if addon_hooks_lag_finder.RunningTest and EventName!="find_laggy_hooks" then
-							return addon_hooks_lag_finder.AddModifiedUsermessage( EventName, HookFunction, ... )
-						else
-							return addon_hooks_lag_finder.usermessage_Hook( EventName, HookFunction, ... )
+					if usermessage then
+						addon_hooks_lag_finder.usermessage_Hook = usermessage.Hook
+						usermessage.Hook = function( EventName, HookFunction, ... )
+							if addon_hooks_lag_finder.RunningTest and EventName!="find_laggy_hooks" then
+								return addon_hooks_lag_finder.AddModifiedUsermessage( EventName, HookFunction, ... )
+							else
+								return addon_hooks_lag_finder.usermessage_Hook( EventName, HookFunction, ... )
+							end
 						end
 					end
 				end
